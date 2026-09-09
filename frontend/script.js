@@ -1,4 +1,25 @@
-} catch (err) {
+add("J.A.R.V.I.S: Thinking...", "ai");
+
+    try {
+
+        const reply = await callGemini(prompt);
+
+        // Remove the temporary Thinking message
+        const messages = chat.querySelectorAll(".msg.ai");
+
+        if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+
+            if (lastMessage.innerText === "J.A.R.V.I.S: Thinking...") {
+                lastMessage.remove();
+            }
+        }
+
+        add("J.A.R.V.I.S: " + reply, "ai");
+
+        speak(reply);
+
+    } catch (err) {
 
         const messages = chat.querySelectorAll(".msg.ai");
 
