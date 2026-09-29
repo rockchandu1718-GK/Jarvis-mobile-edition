@@ -469,6 +469,16 @@ imgInput.onchange=()=>{
   };
   reader.readAsDataURL(file);
 };
+function cleanVisionResponse(text){
+  return String(text || '')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\*{1,3}/g, '')
+    .replace(/_{1,3}/g, '')
+    .replace(/`{1,3}/g, '')
+    .replace(/^[ \t]*[-•][ \t]+/gm, '')
+    .replace(/^[ \t]*>[ \t]?/gm, '')
+    .trim();
+}
 async function askVision(base64,mime,q){
   add('J.A.R.V.I.S: Analyzing image...','ai');
   if(!API_KEY){chat.lastChild.innerText='J.A.R.V.I.S: ERROR - Gemini API key is missing. Reload the page and enter your key.';return;}
@@ -485,7 +495,9 @@ async function askVision(base64,mime,q){
         if(/high demand|temporar|quota|rate|unavailable|no longer available|deprecated|not found|not supported|does not exist|unknown model/i.test(message)) continue;
         throw lastErr;
       }
-      const reply=data?.candidates?.[0]?.content?.parts?.map(part=>part.text).filter(Boolean).join('\n');
+     const reply=cleanVisionResponse(
+  data?.candidates?.[0]?.content?.parts?.map(part=>part.text).filter(Boolean).join('\n')
+); 
       if(!reply){
         const reason=data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason;
         throw new Error(reason ? 'Gemini could not analyze this image ('+reason+').' : 'Gemini returned an empty response.');
