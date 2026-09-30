@@ -109,6 +109,52 @@ async function handleTools(text){
     window.location.href = 'intent://#Intent;package=com.whatsapp;end';
     return 'Opening Whatsapp, Boss.';
 }
+  // ===== PHONE CONTACTS =====
+if(/^\s*(?:please\s+)?sync\s+contacts(?:\s+please)?\s*$/i.test(t)){
+  if(!navigator.contacts||!navigator.contacts.select) return 'Phone contacts need Chrome on Android, Boss. Use: add contact <name> <number>';
+  try{
+    const picked=await navigator.contacts.select(['name','tel'],{multiple:true});
+    if(!picked||!picked.length) return 'No contacts selected, Boss.';
+    let contacts={};
+    try{contacts=JSON.parse(localStorage.getItem('jarvis_contacts')||'{}');}catch(e){}
+    let n=0;
+    for(const c of picked){
+      const nm=String((c.name&&c.name[0])||'').trim().toLowerCase().split(/\s+/)[0];
+      const tel=c.tel&&c.tel[0];
+      if(nm&&tel){contacts[nm]=tel;n++;}
+    }
+    localStorage.setItem('jarvis_contacts',JSON.stringify(contacts));
+    return 'Synced '+n+' contacts, Boss.';
+  }catch(e){ return 'Type it and tap SEND, Boss. Voice cannot open contacts.'; }
+}
+const callMatch=t.match(/^\s*(?:please\s+)?call\s+([a-z]+)(?:\s+please)?\s*$/i);
+if(callMatch){
+  const name=callMatch[1].toLowerCase();
+  let contacts={};
+  try{contacts=JSON.parse(localStorage.getItem('jarvis_contacts')||'{}');}catch(e){}
+  if(!contacts[name]) return 'Contact not found: '+name+', Boss.';
+  window.location.href='tel:'+contacts[name];
+  return 'Calling '+name+', Boss.';
+}
+const addCMatch=t.match(/^\s*(?:please\s+)?add\s+contact\s+([a-z]+)\s+(\+?\d{10,13})\s*$/i);
+if(addCMatch){
+  const name=addCMatch[1].toLowerCase();
+  let num=addCMatch[2];
+  if(/^\d{10}$/.test(num)) num='+91'+num;
+  let contacts={};
+  try{contacts=JSON.parse(localStorage.getItem('jarvis_contacts')||'{}');}catch(e){}
+  contacts[name]=num;
+  localStorage.setItem('jarvis_contacts',JSON.stringify(contacts));
+  return 'Contact saved: '+name+', Boss.';
+}
+const delCMatch=t.match(/^\s*(?:please\s+)?(?:remove|delete)\s+contact\s+([a-z]+)\s*$/i);
+if(delCMatch){
+  const name=delCMatch[1].toLowerCase();
+  let contacts={};
+  try{contacts=JSON.parse(localStorage.getItem('jarvis_contacts')||'{}');}catch(e){}
+  if(contacts[name]){delete contacts[name];localStorage.setItem('jarvis_contacts',JSON.stringify(contacts));return 'Contact removed: '+name+', Boss.';}
+  return 'Contact not found: '+name+', Boss.';
+}
   const openAppMatch = text.match(/^\s*(?:please\s+)?(?:open\s+([a-z]+)|([a-z]+)\s+open|([a-z]+))(?:\s+please)?[.!?]*\s*$/i);
   if (openAppMatch) {
     const siteName = (openAppMatch[1] || openAppMatch[2] || openAppMatch[3]).toLowerCase();
@@ -554,6 +600,14 @@ function telugishToolReply(r){
 if(r.startsWith('Alarm cancelled')) return 'అలారం cancel చేశాను.';
 if(r.startsWith('Tell me the alarm time')) return 'అలారం time cheppu, Boss. Example: set alarm at 6:30 am';
 if(r.startsWith('That time is not valid')) return 'Adi correct time kadu, Boss.';
+  if(r.startsWith('Synced ')&&r.endsWith(' contacts, Boss.')) return '✅ '+r.slice(7,-16)+' contacts phone nundi sync chesa! Ippudu "call <name>" ani cheppu.';
+if(r==='No contacts selected, Boss.') return 'Contacts select cheyyaledu, Boss.';
+if(r.startsWith('Phone contacts need Chrome')) return 'Phone contacts kosam Android Chrome kavali, Boss. Leda "add contact <name> <number>" ani manual ga save cheyyi.';
+if(r.startsWith('Type it and tap SEND')) return 'Contacts kosam voice kadu — type chesi SEND button noku, Boss.';
+if(r.startsWith('Calling ')&&r.endsWith(', Boss.')) return '📞 '+r.slice(8,-7)+' ki call chesthunna! Dialer open ayindi — call button noku.';
+if(r.startsWith('Contact saved: ')) return '✅ '+r.slice(15).replace(/,\s*Boss\.?\s*$/,'')+' contact save chesa!';
+if(r.startsWith('Contact removed: ')) return r.slice(17).replace(/,\s*Boss\.?\s*$/,'')+' contact teesesa.';
+if(r.startsWith('Contact not found: ')) return r.slice(19).replace(/,\s*Boss\.?\s*$/,'')+' ane contact ledu. Mundhu "sync contacts" cheyyi.';
 if(r.startsWith('Reminder duration must')) return 'Reminder duration 0 కంటే ఎక్కువ ఉండాలి.';
 if(r.startsWith('Reminder limit')) return '24 గంటల కంటే ఎక్కువ reminder పెట్టలేను.';
   if(r.startsWith('Timer limit')) return '24 గంటల కంటే ఎక్కువ timer set చేయలేను.';
