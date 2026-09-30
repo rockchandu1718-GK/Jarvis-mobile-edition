@@ -105,8 +105,8 @@ async function handleTools(text){
   const searchYoutubeMatch=text.match(/^\s*search\s+(?:on\s+)?youtube(?:\s+for)?\s+(.+?)\s*$/i);
   const videoQuery=(playMatch||youtubeMatch||searchYoutubeMatch)?.[1]?.trim();
   if(videoQuery){
-    window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(videoQuery),'_blank','noopener,noreferrer');
-    return 'Searching YouTube for '+videoQuery+', Boss.';
+  window.open('https://www.youtube.com/embed?listType=search&list=' + encodeURIComponent(videoQuery) + '&autoplay=1', '_blank');
+  return 'Playing ' + videoQuery + ' on YouTube, Boss.';
   }
 
   if(/^\s*(?:search|look up)(?:\s+for)?\s*$/i.test(text)) return 'Tell me what to search for.';
