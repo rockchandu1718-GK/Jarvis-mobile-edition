@@ -105,7 +105,10 @@ async function handleTools(text){
     'spotify': 'https://open.spotify.com',
     'music': 'https://music.youtube.com'
   };
-
+  if (/(open\s+whatsapp|whatsapp\s+open)/.test(t)) {
+    window.location.href = 'intent://#Intent;scheme=whatsapp;package=com.whatsapp;end';
+    return 'Opening Whatsapp, Boss.';
+}
   const openAppMatch = text.match(/^\s*(?:please\s+)?(?:open\s+([a-z]+)|([a-z]+)\s+open|([a-z]+))(?:\s+please)?[.!?]*\s*$/i);
   if (openAppMatch) {
     const siteName = (openAppMatch[1] || openAppMatch[2] || openAppMatch[3]).toLowerCase();
