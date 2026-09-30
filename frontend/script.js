@@ -24,6 +24,40 @@ const micBtn=document.getElementById('mic-btn');
 const clearBtn=document.getElementById('clear-btn');
 const camBtn=document.getElementById('cam-btn');
 const imgInput=document.getElementById('img-input');
+// ===== TIMER NOTIFICATION + VOICE =====
+if ("Notification" in window && Notification.permission === "default") {
+  Notification.requestPermission();
+}
+function jarvisTimerDone(label){
+  const msg = 'టైమర్ పూర్తయింది! ' + label + ' అయ్యాయి.';
+  try{ add('J.A.R.V.I.S: '+msg,'ai'); }catch(e){}
+  try{ localStorage.setItem('jarvis_last_reply', msg); }catch(e){}
+  try{ speak(msg); }catch(e){}
+  if ("Notification" in window && Notification.permission === "granted") {
+    try{ new Notification('J.A.R.V.I.S Timer', { body: msg }); }catch(e){}
+  }
+  if(navigator.vibrate) try{ navigator.vibrate([500,200,500]); }catch(e){}
+  localStorage.removeItem('jarvis_timer_end');
+}
+(function restoreTimer(){
+  try{
+    const end = Number(localStorage.getItem('jarvis_timer_end'));
+    const label = localStorage.getItem('jarvis_timer_label')||'';
+    if(!end) return;
+    if(Date.now() >= end){
+      jarvisTimerDone(label);
+    } else {
+      if(window.timerInterval) clearInterval(window.timerInterval);
+      window.timerInterval = setInterval(()=>{
+        const e2 = Number(localStorage.getItem('jarvis_timer_end'));
+        if(e2 && Date.now() >= e2){
+          clearInterval(window.timerInterval);
+          jarvisTimerDone(localStorage.getItem('jarvis_timer_label')||'');
+        }
+      }, 2000);
+    }
+  }catch(e){}
+})();
 MEMORY.forEach(m=> add((m.role==='user'?'YOU: ':'J.A.R.V.I.S: ')+m.text, m.role==='user'?'user':'ai'));
 
 // ===== 3. TOOLS (THE HANDS) — 15 TOOLS =====
@@ -141,20 +175,30 @@ async function handleTools(text){
       },()=>resolve('I need location permission for weather, Boss.'),{timeout:10000,maximumAge:300000});
     });
   }
-
-  const timerCommand=t.includes('timer')||t.includes('టైమర్');
-  if(timerCommand){
-    const m=t.match(/(-?\d+(?:\.\d+)?)\s*(seconds?|secs?|sec|s|minutes?|mins?|min|m|hours?|hrs?|hr|h|నిమిషం|నిమిషాలు|సెకను|సెకన్లు|గంట|గంటలు)(?=\s|$|[.,!?])/i);
-    if(!m) return 'Timer format: say “timer 5 minutes”.';
-    const amount=Number(m[1]);
-    const unit=m[2].toLowerCase();
-    if(!Number.isFinite(amount)||amount<=0) return 'Timer duration must be greater than zero.';
-    const factor=/^(?:h|hr|hrs|hour|hours|గంట)/.test(unit)?3600000:/^(?:s|sec|secs|second|seconds|సెకను|సెకన్లు)/.test(unit)?1000:60000;
-    const duration=amount*factor;
-    if(duration>86400000) return 'Timer limit is 24 hours.';
-    setTimeout(()=>speak('టైమర్ పూర్తైంది! '+amount+' '+unit+' అయ్యాయి.'),duration);
-    return 'Timer set for '+amount+' '+unit+'.';
-  }
+ const timerCommand=t.includes('timer')||t.includes('టైమర్');
+if(timerCommand){
+  const m=t.match(/(\d+(?:\.\d+)?)\s*(seconds?|secs?|sec|s|minutes?|mins?|min|m|hours?|hrs?|hr|h)/i);
+  if(!m) return 'Timer format: say "timer 5 minutes".';
+  const amount=Number(m[1]);
+  const unit=m[2].toLowerCase();
+  if(!Number.isFinite(amount)||amount<=0) return 'Timer duration must be greater than zero.';
+  const factor=/^(?:h|hr|hrs|hour|hours)/.test(unit)?3600000:/^(?:m|min|mins|minute|minutes)/.test(unit)?60000:1000;
+  const duration=amount*factor;
+  if(duration>86400000) return 'Timer limit is 24 hours.';
+  const endTime = Date.now() + duration;
+  const label = amount+' '+unit;
+  localStorage.setItem('jarvis_timer_end', String(endTime));
+  localStorage.setItem('jarvis_timer_label', label);
+  if(window.timerInterval) clearInterval(window.timerInterval);
+  window.timerInterval = setInterval(()=>{
+    const e = Number(localStorage.getItem('jarvis_timer_end'));
+    if(e && Date.now() >= e){
+      clearInterval(window.timerInterval);
+      jarvisTimerDone(localStorage.getItem('jarvis_timer_label')||label);
+    }
+  }, 2000);
+  return 'Timer set for '+label+'. Nenu time ayyaka reply isthanu, Boss.';
+}
 
   if(/\bdice\b/.test(t)) return 'You rolled '+(Math.floor(Math.random()*6)+1)+', Boss.';
   if(/\bcoin\b/.test(t)) return Math.random()<0.5?'Heads, Boss.':'Tails, Boss.';
