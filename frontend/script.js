@@ -178,6 +178,29 @@ async function handleTools(text){
       },()=>resolve('I need location permission for weather, Boss.'),{timeout:10000,maximumAge:300000});
     });
   }
+      const remindMatch=t.match(/(?:remind me|remind|reminder)\s*(?:in|after)?\s*(\d+(?:\.\d+)?)\s*(seconds?|secs?|s|minutes?|mins?|min|m|hours?|hrs?|hr|h)\b\s*(?:to\s+)?(.*)/i);
+    if(remindMatch){
+        const amount=Number(remindMatch[1]);
+        const unit=remindMatch[2].toLowerCase();
+        const reminderText=(remindMatch[3]||'').trim();
+        if(!Number.isFinite(amount)||amount<=0) return 'Reminder duration must be greater than zero.';
+        const factor=/^h/.test(unit)?3600000:/^m/.test(unit)?60000:1000;
+        const duration=amount*factor;
+        if(duration>86400000) return 'Reminder limit is 24 hours.';
+        const endTime=Date.now()+duration;
+        const label=reminderText||(amount+' '+unit);
+        localStorage.setItem('jarvis_timer_end',String(endTime));
+        localStorage.setItem('jarvis_timer_label','⏰ Reminder: '+label);
+        if(window.timerInterval) clearInterval(window.timerInterval);
+        window.timerInterval=setInterval(()=>{
+            const e=Number(localStorage.getItem('jarvis_timer_end'));
+            if(e&&Date.now()>=e){
+                clearInterval(window.timerInterval);
+                jarvisTimerDone(localStorage.getItem('jarvis_timer_label')||label);
+            }
+        },2000);
+        return 'Reminder set for '+amount+' '+unit+(reminderText?' ('+reminderText+')':'')+', Boss.';
+    }
  const timerCommand=t.includes('timer')||t.includes('టైమర్');
 if(timerCommand){
   const m=t.match(/(\d+(?:\.\d+)?)\s*(seconds?|secs?|sec|s|minutes?|mins?|min|m|hours?|hrs?|hr|h)/i);
@@ -465,6 +488,9 @@ function telugishToolReply(r){
   if(r.startsWith('The time is ')) return 'ఇప్పుడు టైమ్ '+r.slice(12).replace(', Boss.','')+'.';
   if(r.startsWith('It is ')) return 'ఇప్పుడు '+r.split(' ')[2]+'°C ఉంది.';
   if(r.startsWith('Timer set for ')) return 'సరే, '+r.slice(14).replace(/\.$/,'')+'కి timer పెట్టాను.';
+  if(r.startsWith('Reminder set for ')) return 'సరే, '+r.slice(17).replace(/,\s*Boss\.?\s*$/,'')+' తర్వాత remind చేస్తాను.';
+if(r.startsWith('Reminder duration must')) return 'Reminder duration 0 కంటే ఎక్కువ ఉండాలి.';
+if(r.startsWith('Reminder limit')) return '24 గంటల కంటే ఎక్కువ reminder పెట్టలేను.';
   if(r.startsWith('Timer limit')) return '24 గంటల కంటే ఎక్కువ timer set చేయలేను.';
   if(r.startsWith('Timer format:')) return 'Timer set చేయడానికి “timer 5 minutes” లాగా duration చెప్పు.';
   if(r.startsWith('Timer duration must')) return 'Timer duration 0 కంటే ఎక్కువ ఉండాలి.';
