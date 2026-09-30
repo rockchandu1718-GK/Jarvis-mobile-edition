@@ -105,9 +105,12 @@ async function handleTools(text){
   const searchYoutubeMatch=text.match(/^\s*search\s+(?:on\s+)?youtube(?:\s+for)?\s+(.+?)\s*$/i);
   const videoQuery=(playMatch||youtubeMatch||searchYoutubeMatch)?.[1]?.trim();
   if(videoQuery){
-  window.open('https://www.youtube.com/embed?listType=search&list=' + encodeURIComponent(videoQuery) + '&autoplay=1', '_blank');
+  const ytDiv = document.getElementById('yt-player');
+  ytDiv.style.display = 'block';
+  ytDiv.innerHTML = '<iframe width="100%" height="250" src="https://www.youtube.com/embed?listType=search&list=' + encodeURIComponent(videoQuery) + '&autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>';
+  ytDiv.scrollIntoView({behavior:'smooth'});
   return 'Playing ' + videoQuery + ' on YouTube, Boss.';
-  }
+}
 
   if(/^\s*(?:search|look up)(?:\s+for)?\s*$/i.test(text)) return 'Tell me what to search for.';
   const searchMatch=text.match(/^\s*(?:search|look up)\s+(?:for\s+)?(.+?)\s*$/i);
