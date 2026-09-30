@@ -90,7 +90,7 @@ async function handleTools(text){
   }
   if(/\b(?:what time(?: is it)?|what is the time|current time|tell me the time|time now)\b/.test(t)||/^\s*time(?:\s+please)?[.!?]*\s*$/.test(t)||t.includes('టైమ్')||t.includes('సమయం')||t.includes('samayam'))
     return 'The time is '+new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'numeric',minute:'2-digit'})+' IST, Boss.';
-
+  if(/\b(?:today'?s date|what.*date|current date|date today)\b/.test(t)||/^\s*date(?:\s+please)?[.!?]*\s*$/.test(t)){const today=new Date().toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',weekday:'long',year:'numeric',month:'long',day:'numeric'});return 'Today is '+today+', Boss.';}
   if(t.includes('weather')||t.includes('వాతావరణం')){
     if(!navigator.geolocation) return 'I need location permission for weather, Boss.';
     return await new Promise(resolve=>{
@@ -352,7 +352,8 @@ async function runAgent(goal){
 async function callGemini(p){
   if(!API_KEY) throw new Error('Gemini API key is missing. Reload the page and enter your key.');
   const contents = MEMORY.slice(-12).map(m=>({role:m.role, parts:[{text:m.text}]}));
-  contents.push({role:'user', parts:[{text:p}]});
+  const todayStr=new Date().toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',weekday:'long',year:'numeric',month:'long',day:'numeric'});
+contents.push({role:'user', parts:[{text:"[Today's date is "+todayStr+"] "+p}]});
   let lastErr;
   for(const m of MODELS){
     try{
