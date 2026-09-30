@@ -98,18 +98,17 @@ async function handleTools(text){
     'fb': 'https://facebook.com',
     'twitter': 'https://x.com',
     'x': 'https://x.com',
-    'whatsapp': 'https://web.whatsapp.com',
+    'whatsapp': 'https://wa.me/',
     'telegram': 'https://web.telegram.org',
     'gmail': 'https://mail.google.com',
     'github': 'https://github.com',
     'spotify': 'https://open.spotify.com',
     'music': 'https://music.youtube.com'
   };
- if (/open\s+whatsapp|whatsapp\s+open/.test(t)) {
-  window.location.href = 'intent://#Intent;package=com.whatsapp;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end';
-  return 'Opening Whatsapp, Boss.';
+  if (/(open\s+whatsapp|whatsapp\s+open)/.test(t)) {
+    window.location.href = 'intent://#Intent;package=com.whatsapp;end';
+    return 'Opening Whatsapp, Boss.';
 }
-
   const openAppMatch = text.match(/^\s*(?:please\s+)?(?:open\s+([a-z]+)|([a-z]+)\s+open|([a-z]+))(?:\s+please)?[.!?]*\s*$/i);
   if (openAppMatch) {
     const siteName = (openAppMatch[1] || openAppMatch[2] || openAppMatch[3]).toLowerCase();
