@@ -98,7 +98,7 @@ async function handleTools(text){
     'fb': 'https://facebook.com',
     'twitter': 'https://x.com',
     'x': 'https://x.com',
-    'whatsapp': 'https://web.whatsapp.com',
+    'whatsapp': 'https://wa.me/',
     'telegram': 'https://web.telegram.org',
     'gmail': 'https://mail.google.com',
     'github': 'https://github.com',
