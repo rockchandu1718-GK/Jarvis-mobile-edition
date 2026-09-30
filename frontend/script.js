@@ -44,7 +44,42 @@ async function handleTools(text){
 
   if(/^\s*(?:please\s+)?(?:open\s+youtube|youtube\s+open|youtube)(?:\s+please)?[.!?]*\s*$/i.test(text)){ window.open('https://youtube.com','_blank','noopener,noreferrer'); return 'Opening YouTube, Boss.'; }
   if(/^\s*(?:please\s+)?(?:open\s+google|google\s+open|google)(?:\s+please)?[.!?]*\s*$/i.test(text)){ window.open('https://google.com','_blank','noopener,noreferrer'); return 'Opening Google, Boss.'; }
+  // NANO MUSIC - put your URL here
+  const NANO_URL = 'https://music.youtube.com'; // <-- replace with your Nano Music URL
+  if(/^\s*(?:please\s+)?(?:open\s+nano\s+music|nano\s+music\s+open|nano\s+music)(?:\s+please)?[.!?]*\s*$/i.test(text)){
+    window.open(NANO_URL,'_blank','noopener,noreferrer');
+    return 'Opening Nano Music, Boss.';
+  }
+  const nanoPlayMatch = text.match(/^\s*(?:play\s+(.+?)\s+on\s+nano\s+music|nano\s+music\s+play\s+(.+?))\s*$/i);
+  if(nanoPlayMatch){
+    const q = (nanoPlayMatch[1] || nanoPlayMatch[2]).trim();
+    window.open(NANO_URL + '/search?q=' + encodeURIComponent(q),'_blank','noopener,noreferrer');
+    return 'Playing '+q+' on Nano Music, Boss.';
+  }
 
+  const SITES = {
+    'instagram': 'https://instagram.com',
+    'insta': 'https://instagram.com',
+    'facebook': 'https://facebook.com',
+    'fb': 'https://facebook.com',
+    'twitter': 'https://x.com',
+    'x': 'https://x.com',
+    'whatsapp': 'https://web.whatsapp.com',
+    'telegram': 'https://web.telegram.org',
+    'gmail': 'https://mail.google.com',
+    'github': 'https://github.com',
+    'spotify': 'https://open.spotify.com',
+    'music': 'https://music.youtube.com'
+  };
+
+  const openAppMatch = text.match(/^\s*(?:please\s+)?(?:open\s+([a-z]+)|([a-z]+)\s+open|([a-z]+))(?:\s+please)?[.!?]*\s*$/i);
+  if (openAppMatch) {
+    const siteName = (openAppMatch[1] || openAppMatch[2] || openAppMatch[3]).toLowerCase();
+    if (SITES[siteName]) {
+      window.open(SITES[siteName], '_blank', 'noopener,noreferrer');
+      return 'Opening ' + siteName.charAt(0).toUpperCase() + siteName.slice(1) + ', Boss.';
+    }
+  }
   const urlCommand=text.match(/^\s*(?:open|visit|go to)\s+(https?:\/\/\S+)\s*$/i);
   if(urlCommand){
     try{
