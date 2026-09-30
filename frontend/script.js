@@ -201,6 +201,34 @@ async function handleTools(text){
         },2000);
         return 'Reminder set for '+amount+' '+unit+(reminderText?' ('+reminderText+')':'')+', Boss.';
     }
+  // ===== ALARM =====
+if(/\bwake me up\b/.test(t)||(/\balarm\b/.test(t)&&/\b(set|at|for|stop|cancel|off)\b/.test(t))){
+  // Cancel alarm
+  if(/\b(stop|cancel|off|dismiss)\b/.test(t)){
+    stopJarvisAlarm();
+    if(window.__jarvisAlarmTO){clearTimeout(window.__jarvisAlarmTO);window.__jarvisAlarmTO=null;}
+    localStorage.removeItem('jarvis_alarm');
+    return 'Alarm cancelled, Boss.';
+  }
+  const m=t.match(/(\d{1,2})\s*(?::|\.)?\s*(\d{2})?\s*(am|pm)?\b/i);
+  if(!m) return 'Tell me the alarm time, Boss.';
+  let hr=parseInt(m[1],10), min=m[2]?parseInt(m[2],10):0;
+  const ap=(m[3]||'').toLowerCase();
+  if(ap==='pm'&&hr<12) hr+=12;
+  if(ap==='am'&&hr===12) hr=0;
+  if(hr>23||min>59) return 'That time is not valid, Boss.';
+  const now=new Date(), target=new Date(now);
+  target.setHours(hr,min,0,0);
+  let dayNote='today';
+  if(target.getTime()-now.getTime()<60000){target.setDate(target.getDate()+1);dayNote='tomorrow';}
+  const delay=target.getTime()-now.getTime();
+  if(window.__jarvisAlarmTO) clearTimeout(window.__jarvisAlarmTO);
+  localStorage.setItem('jarvis_alarm',JSON.stringify({hr:target.getHours(),min:target.getMinutes()}));
+  window.__jarvisAlarmTO=setTimeout(fireJarvisAlarm,delay);
+  const h12=target.getHours()%12||12, ap2=target.getHours()<12?'AM':'PM';
+  const mm=String(target.getMinutes()).padStart(2,'0');
+  return 'Alarm set for '+h12+':'+mm+' '+ap2+' '+dayNote+', Boss.';
+}
  const timerCommand=t.includes('timer')||t.includes('టైమర్');
 if(timerCommand){
   const m=t.match(/(\d+(?:\.\d+)?)\s*(seconds?|secs?|sec|s|minutes?|mins?|min|m|hours?|hrs?|hr|h)/i);
@@ -344,6 +372,39 @@ if(timerCommand){
   }
 
   return null;
+}
+function fireJarvisAlarm(){
+  window.__jarvisAlarmTO=null;
+  localStorage.removeItem('jarvis_alarm');
+  window.__jarvisAlarmRinging=true;
+  try{if(navigator.vibrate) navigator.vibrate([600,300,600,300,600,300,600]);}catch(e){}
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    const ctx=new AC(); window.__jarvisAlarmCtx=ctx;
+    (function beep(){
+      if(!window.__jarvisAlarmRinging) return;
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sine'; o.frequency.value=880;
+      g.gain.setValueAtTime(0.4,ctx.currentTime);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime+0.4);
+      setTimeout(beep,700);
+    })();
+  }catch(e){}
+  const ov=document.createElement('div');
+  ov.id='jarvisAlarmOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+  ov.innerHTML='<div style="font-size:70px;">⏰</div><div style="color:#0ff;font-size:26px;margin:16px;text-align:center;">ALARM!<br>Time to wake up, Boss!</div><button id="jarvisAlarmStop" style="background:#0ff;color:#000;border:none;padding:14px 50px;font-size:20px;border-radius:8px;font-weight:bold;">STOP</button>';
+  document.body.appendChild(ov);
+  document.getElementById('jarvisAlarmStop').onclick=stopJarvisAlarm;
+  speak('Alarm! Time to wake up, Boss!');
+}
+function stopJarvisAlarm(){
+  window.__jarvisAlarmRinging=false;
+  try{if(window.__jarvisAlarmCtx) window.__jarvisAlarmCtx.close();}catch(e){}
+  const ov=document.getElementById('jarvisAlarmOverlay');
+  if(ov) ov.remove();
+  try{if(navigator.vibrate) navigator.vibrate(0);}catch(e){}
 }
 // ===== 3.5. AGENT MODE =====
 // Reuse the tools already implemented above; this avoids undefined getWeather/getNews/getCrypto helpers.
@@ -489,6 +550,10 @@ function telugishToolReply(r){
   if(r.startsWith('It is ')) return 'ఇప్పుడు '+r.split(' ')[2]+'°C ఉంది.';
   if(r.startsWith('Timer set for ')) return 'సరే, '+r.slice(14).replace(/\.$/,'')+'కి timer పెట్టాను.';
   if(r.startsWith('Reminder set for ')) return 'సరే, '+r.slice(17).replace(/,\s*Boss\.?\s*$/,'')+' తర్వాత remind చేస్తాను.';
+  if(r.startsWith('Alarm set for ')) return 'అలారం సెట్ చేశాను — '+r.slice(14).replace(/,\s*Boss\.?\s*$/,'')+'.';
+if(r.startsWith('Alarm cancelled')) return 'అలారం cancel చేశాను.';
+if(r.startsWith('Tell me the alarm time')) return 'అలారం time cheppu, Boss. Example: set alarm at 6:30 am';
+if(r.startsWith('That time is not valid')) return 'Adi correct time kadu, Boss.';
 if(r.startsWith('Reminder duration must')) return 'Reminder duration 0 కంటే ఎక్కువ ఉండాలి.';
 if(r.startsWith('Reminder limit')) return '24 గంటల కంటే ఎక్కువ reminder పెట్టలేను.';
   if(r.startsWith('Timer limit')) return '24 గంటల కంటే ఎక్కువ timer set చేయలేను.';
@@ -633,3 +698,14 @@ document.getElementById('send').onclick=()=>{ const t=input.value.trim(); if(!t)
   add('YOU: '+t,'user'); input.value=''; askGemini(t); };
 clearBtn.onclick=()=>{ MEMORY=[]; saveMemory(); chat.innerHTML=''; add('SYSTEM: Memory cleared.','ai'); };
 function add(t,w){const d=document.createElement('div');d.className='msg '+w;d.innerText=t;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;}
+// Restore alarm after page refresh
+(function(){
+  try{
+    const a=JSON.parse(localStorage.getItem('jarvis_alarm')||'null');
+    if(!a) return;
+    const now=new Date(), target=new Date(now);
+    target.setHours(a.hr,a.min,0,0);
+    if(target.getTime()<now.getTime()) target.setDate(target.getDate()+1);
+    window.__jarvisAlarmTO=setTimeout(fireJarvisAlarm,target.getTime()-now.getTime());
+  }catch(e){}
+})();
