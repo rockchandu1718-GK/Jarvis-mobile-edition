@@ -106,8 +106,7 @@ async function handleTools(text){
     'music': 'https://music.youtube.com'
   };
   if (/open\s+whatsapp|whatsapp\s+open/.test(t)) {
-  try{ window.location.href = 'intent://send/#Intent;scheme=whatsapp;package=com.whatsapp;end'; }catch(e){}
-  setTimeout(()=>{ window.open('https://web.whatsapp.com', '_blank', 'noopener,noreferrer'); }, 800);
+  window.location.href = 'intent://#Intent;package=com.whatsapp;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end';
   return 'Opening Whatsapp, Boss.';
 }
 }
