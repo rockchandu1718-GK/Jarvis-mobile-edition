@@ -871,3 +871,96 @@ function setupVoiceInput() {
 }
 
 setupVoiceInput();
+// ===== STEP 6: "HEY JARVIS" WAKE WORD =====
+let wakeMode = false;
+let wakeRec = null;
+let wakePaused = false;
+
+function setupWakeWord() {
+  if (!SR ||!rec) return;
+
+  wakeRec = new SR();
+  wakeRec.lang = 'en-US';
+  wakeRec.continuous = true;
+  wakeRec.interimResults = true;
+
+  wakeRec.onresult = (e) => {
+    let t = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      t += e.results[i][0].transcript;
+    }
+    if (t.toLowerCase().includes("hey jarvis")) onWakeWord();
+  };
+
+  // Auto-restart (Chrome ~1 min ki aaputhundhi, malli start chestham)
+  wakeRec.onend = () => {
+    if (wakeMode &&!wakePaused) {
+      setTimeout(() => { try { wakeRec.start(); } catch(e){} }, 500);
+    }
+  };
+
+  wakeRec.onerror = (e) => {
+    if (e.error === "not-allowed") {
+      add("SYSTEM: Mic blocked! Wake word OFF.", "ai");
+      setWakeMode(false);
+    }
+  };
+
+  // Wake word toggle button
+  const wb = document.createElement("button");
+  wb.innerText = "WAKE: OFF";
+  wb.style.cssText = "padding:10px;margin:5px;background:#222;color:#0ff;border:1px solid #0ff;border-radius:8px;";
+  micBtn.parentNode.insertBefore(wb, micBtn.nextSibling);
+  wb.onclick = () => setWakeMode(!wakeMode);
+  window._wakeBtn = wb;
+
+  // Manual mic vadinappudu wake ni pause cheyyi
+  const _oldMicClick = micBtn.onclick;
+  micBtn.onclick = () => {
+    if (wakeMode) { wakePaused = true; try { wakeRec.stop(); } catch(e){} }
+    _oldMicClick();
+  };
+
+  // Command aypoyaka wake ni malli on cheyyi
+  const _oldOnEnd = rec.onend;
+  rec.onend = () => {
+    if (_oldOnEnd) _oldOnEnd();
+    if (wakeMode) {
+      wakePaused = false;
+      setTimeout(() => { try { wakeRec.start(); } catch(e){} }, 1000);
+    }
+  };
+}
+
+function setWakeMode(on) {
+  wakeMode = on;
+  const wb = window._wakeBtn;
+  if (on) {
+    wb.innerText = "WAKE: ON 👂";
+    wb.style.background = "#003300";
+    add("SYSTEM: Wake word ON! 'Hey Jarvis' ani piluvu.", "ai");
+    speak("Wake word activated. Say hey Jarvis anytime.");
+    try { wakeRec.start(); } catch(e){}
+  } else {
+    wb.innerText = "WAKE: OFF";
+    wb.style.background = "#222";
+    try { wakeRec.stop(); } catch(e){}
+  }
+}
+
+function onWakeWord() {
+  if (wakePaused) return;
+  wakePaused = true;
+  try { wakeRec.stop(); } catch(e){}
+  add("SYSTEM: Wake word detected! 🎯", "ai");
+  speak("Yes boss? I'm listening.");
+  setTimeout(() => {
+    try {
+      rec.start();
+      micBtn.innerText = '🔴';
+      micBtn.style.boxShadow = '0 0 20px red';
+    } catch(e){}
+  }, 2000);
+}
+
+setupWakeWord();
