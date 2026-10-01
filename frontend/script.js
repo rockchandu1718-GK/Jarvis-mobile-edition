@@ -241,7 +241,7 @@ if(waMatch){
     return 'Weather service error, Boss.';
   }
 }
-  if(t.includes('news')||t.includes('వార్తలు')||t.includes('vartalu')){
+  if(t.includes('news')||t.includes('వార్తలు')||t.includes('vartalu')||t.includes('varthalu')){
   try{
     const ids = await fetchToolJson('https://hacker-news.firebaseio.com/v0/topstories.json');
     const top = ids.slice(0,5);
@@ -250,7 +250,7 @@ if(waMatch){
       const item = await fetchToolJson('https://hacker-news.firebaseio.com/v0/item/'+id+'.json');
       if(item && item.title) heads.push(item.title);
     }
-    const telugu = t.includes('వార్తలు')||t.includes('vartalu');
+    const telugu = t.includes('వార్తలు')||t.includes('vartalu')||t.includes('varthalu');
     if(!heads.length) return telugu? 'ప్రస్తుతం వార్తలు లేవు.' : 'No news right now, Boss.';
     let final = heads;
     if(telugu){
@@ -809,7 +809,7 @@ function startHum(){
 function stopHum(){
   try{if(humOsc){humOsc.stop();humOsc.disconnect();humOsc=null;}}catch(e){}
 }
-function speak(t){ if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined')return; const u=new SpeechSynthesisUtterance(t); u.rate=0.9; u.pitch=0.6;
+function speak(t){ t=String(t).replace(/\*\*/g,'').replace(/[#*_`]/g,'').trim(); if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined')return; const u=new SpeechSynthesisUtterance(t); u.rate=0.9; u.pitch=0.6;
   u.onstart=startHum;u.onend=stopHum;u.onerror=stopHum;            
   const isTelugu=/[\u0C00-\u0C7F]/.test(t); const v=isTelugu?voices.find(v=>/^te[-_]/i.test(v.lang)):(voices.find(v=>/uk english male/i.test(v.name))||voices.find(v=>/^en[-_]GB/i.test(v.lang))||voices.find(v=>/^en[-_]/i.test(v.lang))); if(v){u.voice=v;u.lang=v.lang;}else if(isTelugu)u.lang='te-IN'; try{window.speechSynthesis.speak(u);}catch(e){console.warn('Speech output unavailable:',e);} }
 
