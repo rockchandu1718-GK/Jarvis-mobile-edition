@@ -168,6 +168,46 @@ if(waMatch){
   window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
   return 'Opening WhatsApp chat with '+name+', Boss.';
 } 
+  169 return 'Opening WhatsApp chat with '+name+', Boss.';
+170 }
+// ===== SCHEDULE / PROGRAMS =====
+const addEvMatch=text.match(/^\s*(?:please\s+)?add\s+event\s+(.+?)\s+(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*$/i);
+if(addEvMatch){
+  const title=addEvMatch[1].trim();
+  const dayWord=addEvMatch[2].toLowerCase();
+  const tm=addEvMatch[3].trim().toLowerCase().match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  let hr=parseInt(tm[1],10); const mn=tm[2]?parseInt(tm[2],10):0;
+  const ap=tm[3]||'';
+  if(ap==='pm'&&hr<12)hr+=12;
+  if(ap==='am'&&hr===12)hr=0;
+  if(hr>23||mn>59) return 'That time is not valid, Boss.';
+  const now=new Date(); const d=new Date(now);
+  const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  if(dayWord==='tomorrow')d.setDate(d.getDate()+1);
+  else if(dayWord!=='today'){const diff=(days.indexOf(dayWord)-d.getDay()+7)%7;d.setDate(d.getDate()+(diff===0?7:diff));}
+  const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let sched=[];
+  try{sched=JSON.parse(localStorage.getItem('jarvis_schedule'))||[];}catch(e){sched=[];}
+  if(!Array.isArray(sched))sched=[];
+  sched.push({title:title,date:key,time:String(hr).padStart(2,'0')+':'+String(mn).padStart(2,'0')});
+  localStorage.setItem('jarvis_schedule',JSON.stringify(sched));
+  return 'Event saved: '+title+' on '+dayWord+', Boss.';
+}
+const schMatch=text.match(/^\s*(?:please\s+)?(?:what(?:'s| is)\s+my\s+schedule|my\s+schedule|today'?s?\s+programs?)(?:\s+(today|tomorrow))?\s*[?.!]?\s*$/i);
+if(schMatch){
+  const dayWord=(schMatch[1]||'today').toLowerCase();
+  const now=new Date(); const d=new Date(now);
+  if(dayWord==='tomorrow')d.setDate(d.getDate()+1);
+  const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let sched=[];
+  try{sched=JSON.parse(localStorage.getItem('jarvis_schedule'))||[];}catch(e){sched=[];}
+  if(!Array.isArray(sched))sched=[];
+  const todays=sched.filter(e=>e&&e.date===key).sort((a,b)=>a.time<b.time?-1:1);
+  if(!todays.length) return 'No programs '+dayWord+', Boss.';
+  const list=todays.map((e,i)=>(i+1)+') '+e.title+' - '+e.time).join(', ');
+  return 'Your schedule '+dayWord+': '+list+', Boss.';
+}
+          const openAppMatch = text.match(...)
   const openAppMatch = text.match(/^\s*(?:please\s+)?(?:open\s+([a-z]+)|([a-z]+)\s+open|([a-z]+))(?:\s+please)?[.!?]*\s*$/i);
   if (openAppMatch) {
     const siteName = (openAppMatch[1] || openAppMatch[2] || openAppMatch[3]).toLowerCase();
@@ -641,6 +681,10 @@ if(r.startsWith('Reminder limit')) return '24 గంటల కంటే ఎక�
   if(r.startsWith('Your strong password: ')) return 'ఇదిగో strong password: '+r.slice('Your strong password: '.length);
   if(r.startsWith('Secure password generation')) return 'ఈ browserలో secure password generate చేయడం అందుబాటులో లేదు.';
   if(r.startsWith('Opening WhatsApp chat with ')&&r.endsWith(', Boss.')) return '💬 '+r.slice(27,-7)+' tho WhatsApp chat open chesa! Message ready chesa — send button noku.';
+  if(r.startsWith('Event saved: ')) return '✅ Event save chesa: '+r.slice(13).replace(/,\s*Boss\./,'')+'.';
+if(r.startsWith('Your schedule ')) return '📅 '+r.replace(/,\s*Boss\./,'')+'.';
+if(r.startsWith('No programs today')) return '📅 Eeroju em programs levu, Boss — free day! 😎';
+if(r.startsWith('No programs tomorrow')) return '📅 Repatiki em programs levu, Boss.';
   if(r.startsWith('Opening YouTube')) return 'YouTube ఓపెన్ చేస్తున్నాను.';
   if(r.startsWith('Opening Google')) return 'Google ఓపెన్ చేస్తున్నాను.';
   if(r.startsWith('Opening ')) return r.replace(', Boss.','')+' చేస్తున్నాను.';
