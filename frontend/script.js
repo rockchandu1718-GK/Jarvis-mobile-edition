@@ -241,7 +241,7 @@ if(waMatch){
     return 'Weather service error, Boss.';
   }
 }
-  if(t.includes('news')||t.includes('వార్తలు')){
+  if(t.includes('news')||t.includes('వార్తలు')||t.includes('vartalu')){
   try{
     const ids = await fetchToolJson('https://hacker-news.firebaseio.com/v0/topstories.json');
     const top = ids.slice(0,5);
@@ -250,10 +250,20 @@ if(waMatch){
       const item = await fetchToolJson('https://hacker-news.firebaseio.com/v0/item/'+id+'.json');
       if(item && item.title) heads.push(item.title);
     }
-    const telugu = t.includes('వార్తలు');
-    if(!heads.length) return telugu ? 'ప్రస్తుతం వార్తలు లేవు.' : 'No news right now, Boss.';
-    const prefix = telugu ? 'ముఖ్య వార్తలు: ' : 'Top headlines, Boss: ';
-    return prefix + heads.map((h,i)=>(i+1)+'. '+h).join(' ');
+    const telugu = t.includes('వార్తలు')||t.includes('vartalu');
+    if(!heads.length) return telugu? 'ప్రస్తుతం వార్తలు లేవు.' : 'No news right now, Boss.';
+    let final = heads;
+    if(telugu){
+      final = [];
+      for(const h of heads){
+        try{
+          const tr = await fetchToolJson('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=te&dt=t&q='+encodeURIComponent(h));
+          final.push(tr[0].map(s=>s[0]).join('') || h);
+        }catch(e){ final.push(h); }
+      }
+    }
+    const prefix = telugu? 'ముఖ్య వార్తలు: ' : 'Top headlines, Boss: ';
+    return prefix + final.map((h,i)=>(i+1)+'. '+h).join(' ');
   }catch(e){
     return 'News service error, Boss.';
   }
