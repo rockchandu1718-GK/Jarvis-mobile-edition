@@ -156,7 +156,7 @@ if(delCMatch){
   return 'Contact not found: '+name+', Boss.';
 }
  // ===== WHATSAPP MESSAGE =====
-const waMatch=t.match(/^\s*(?:please\s+)?(?:send\s+)?whatsapp\s+(?:to\s+)?([a-z]+)\s+(.+?)\s*$/i);
+const waMatch=text.match(/^\s*(?:please\s+)?(?:send\s+)?whatsapp\s+(?:to\s+)?([a-z]+)\s+(.+?)\s*$/i);
 if(waMatch){
   const name=waMatch[1].toLowerCase();
   const msg=waMatch[2].trim();
