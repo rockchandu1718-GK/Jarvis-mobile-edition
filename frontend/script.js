@@ -241,6 +241,23 @@ if(waMatch){
     return 'Weather service error, Boss.';
   }
 }
+  if(t.includes('news')||t.includes('వార్తలు')){
+  try{
+    const ids = await fetchToolJson('https://hacker-news.firebaseio.com/v0/topstories.json');
+    const top = ids.slice(0,5);
+    const heads = [];
+    for(const id of top){
+      const item = await fetchToolJson('https://hacker-news.firebaseio.com/v0/item/'+id+'.json');
+      if(item && item.title) heads.push(item.title);
+    }
+    const telugu = t.includes('వార్తలు');
+    if(!heads.length) return telugu ? 'ప్రస్తుతం వార్తలు లేవు.' : 'No news right now, Boss.';
+    const prefix = telugu ? 'ముఖ్య వార్తలు: ' : 'Top headlines, Boss: ';
+    return prefix + heads.map((h,i)=>(i+1)+'. '+h).join(' ');
+  }catch(e){
+    return 'News service error, Boss.';
+  }
+}
       const remindMatch=t.match(/(?:remind me|remind|reminder)\s*(?:in|after)?\s*(\d+(?:\.\d+)?)\s*(seconds?|secs?|s|minutes?|mins?|min|m|hours?|hrs?|hr|h)\b\s*(?:to\s+)?(.*)/i);
     if(remindMatch){
         const amount=Number(remindMatch[1]);
