@@ -257,9 +257,10 @@ if(waMatch){
       final = [];
       for(const h of heads){
         try{
-          const tr = await fetchToolJson('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=te&dt=t&q='+encodeURIComponent(h));
-          final.push(tr[0].map(s=>s[0]).join('') || h);
-        }catch(e){ final.push(h); }
+  if(h.length<20){ final.push(h); continue; }
+  const tr = await fetchToolJson('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=te&dt=t&q='+encodeURIComponent(h));
+  final.push(tr[0].map(s=>s[0]).join('').replace(/☐/g,'') || h);
+}catch(e){ final.push(h); }
       }
     }
     const prefix = telugu? 'ముఖ్య వార్తలు: ' : 'Top headlines, Boss: ';
