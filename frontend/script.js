@@ -824,3 +824,50 @@ window.addEventListener('load', () => {
 document.addEventListener('click', () => {
   startupGreeting();
 }, { once: true });
+
+// ===== STEP 5: VOICE INPUT UPGRADE =====
+function setupVoiceInput() {
+  if (!rec) {
+    console.log("Voice input not supported");
+    return;
+  }
+
+  rec.lang = 'en-US';
+  rec.interimResults = false;
+  rec.continuous = false;
+
+  // Mic button nokkithe listening start
+  micBtn.onclick = () => {
+    try {
+      rec.start();
+      micBtn.innerText = '🔴';
+      micBtn.style.boxShadow = '0 0 20px red';
+      add('SYSTEM: Listening... speak now!', 'ai');
+    } catch(e) { /* already listening */ }
+  };
+
+  // Speech vinipinchagane
+  rec.onresult = (e) => {
+    const t = e.results[0][0].transcript;
+    add('YOU: ' + t, 'user');
+    askGemini(t);
+  };
+
+  // Listening aagagane button reset
+  rec.onend = () => {
+    micBtn.innerText = '🎤';
+    micBtn.style.boxShadow = '';
+  };
+
+  // Mic permission block aithe
+  rec.onerror = (e) => {
+    micBtn.innerText = '🎤';
+    micBtn.style.boxShadow = '';
+    if (e.error === 'not-allowed') {
+      add('SYSTEM: Mic blocked! Browser settings lo microphone allow cheyyi.', 'ai');
+      speak('Microphone permission is blocked. Please allow microphone access.');
+    }
+  };
+}
+
+setupVoiceInput();
