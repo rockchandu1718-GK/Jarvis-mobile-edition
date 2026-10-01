@@ -798,3 +798,29 @@ function add(t,w){const d=document.createElement('div');d.className='msg '+w;d.i
     window.__jarvisAlarmTO=setTimeout(fireJarvisAlarm,target.getTime()-now.getTime());
   }catch(e){}
 })();
+// ===== STEP 4: STARTUP GREETING =====
+let hasGreeted = false;
+
+function startupGreeting() {
+  if (hasGreeted) return;
+  hasGreeted = true;
+
+  const hour = new Date().getHours();
+  let timeOfDay;
+  if (hour < 12) timeOfDay = "Good morning";
+  else if (hour < 17) timeOfDay = "Good afternoon";
+  else timeOfDay = "Good evening";
+
+  const greeting = timeOfDay + ", boss. All systems online and fully operational. How may I assist you?";
+
+  add('J.A.R.V.I.S: ' + greeting, 'ai');
+  speak(greeting);
+}
+
+window.addEventListener('load', () => {
+  setTimeout(startupGreeting, 1500);
+});
+
+document.addEventListener('click', () => {
+  startupGreeting();
+}, { once: true });
