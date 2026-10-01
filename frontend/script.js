@@ -583,7 +583,7 @@ contents.push({role:'user', parts:[{text:"[Today's date is "+todayStr+"] "+p}]})
   for(const m of MODELS){
     try{
       const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+m+":generateContent?key="+encodeURIComponent(API_KEY),
-        {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({systemInstruction:{parts:[{text:"You are J.A.R.V.I.S. — Tony Stark's personal AI from Iron Man. The user's name is Chandu. Address him as 'sir', occasionally using his name for a personal touch. Be witty, loyal and calm, with dry British humor and quiet confidence. You are brilliant and always one step ahead. Reply naturally in a warm Telugu-English mix (Telugish), Telugu script for Telugu, English for technical terms. Keep replies concise, conversational, easy to say aloud. Never break character."}]},contents:contents})});
+        {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({systemInstruction:{parts:[{text:"You are J.A.R.V.I.S. — Tony Stark's personal AI from Iron Man. The user's name is Chandu. Address him as 'boss', occasionally using his name for a personal touch. Be witty, loyal and calm, with dry British humor and quiet confidence. You are brilliant and always one step ahead. Reply naturally in a warm Telugu-English mix (Telugish), Telugu script for Telugu, English for technical terms. Keep replies concise, conversational, easy to say aloud. Never break character."}]},contents:contents})});
       const data=await res.json();
       if(data.error){
         const message=data.error.message || 'Gemini request failed.';
