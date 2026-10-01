@@ -223,20 +223,24 @@ if(waMatch){
     return 'The time is '+new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'numeric',minute:'2-digit'})+' IST, Boss.';
   if(/\b(?:today'?s date|what.*date|current date|date today)\b/.test(t)||/^\s*date(?:\s+please)?[.!?]*\s*$/.test(t)){const today=new Date().toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',weekday:'long',year:'numeric',month:'long',day:'numeric'});return 'Today is '+today+', Boss.';}
   if(t.includes('weather')||t.includes('వాతావరణం')){
-    if(!navigator.geolocation) return 'I need location permission for weather, Boss.';
-    return await new Promise(resolve=>{
-      navigator.geolocation.getCurrentPosition(async position=>{
-        try{
-          const url='https://api.open-meteo.com/v1/forecast?latitude='+position.coords.latitude+'&longitude='+position.coords.longitude+'&current_weather=true';
-          const data=await fetchToolJson(url);
-          const temperatureValue=data?.current_weather?.temperature ?? data?.current?.temperature_2m;
-          const temperature=Number(temperatureValue);
-          if(temperatureValue===null||temperatureValue===undefined||!Number.isFinite(temperature)) throw new Error('Weather data unavailable.');
-          resolve('It is '+temperature+' degrees Celsius now, Boss.');
-        }catch(e){ resolve('Weather service error, Boss.'); }
-      },()=>resolve('I need location permission for weather, Boss.'),{timeout:10000,maximumAge:300000});
-    });
+  try{
+    // command nundi city name extract: "weather in Delhi" -> "Delhi"
+    let city = '';
+    const cm = text.match(/weather\s+(?:in|at|for)?\s*([A-Za-z][A-Za-z\s]*)/i);
+    if(cm && cm[1]) city = cm[1].trim().replace(/\?+$/,'');
+    if(!city) city = 'Hyderabad';
+    // city -> coordinates (free API, key avasaram ledhu)
+    const geo = await fetchToolJson('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(city)+'&count=1&language=en&format=json');
+    const g = geo && geo.results && geo.results[0];
+    if(!g) return 'Could not find that city, Boss.';
+    const w = await fetchToolJson('https://api.open-meteo.com/v1/forecast?latitude='+g.latitude+'&longitude='+g.longitude+'&current=temperature_2m');
+    const c = w && w.current;
+    if(!c || typeof c.temperature_2m!== 'number') return 'Weather service error, Boss.';
+    return 'It is '+c.temperature_2m+' degrees Celsius now in '+(g.name||city)+', Boss.';
+  }catch(e){
+    return 'Weather service error, Boss.';
   }
+}
       const remindMatch=t.match(/(?:remind me|remind|reminder)\s*(?:in|after)?\s*(\d+(?:\.\d+)?)\s*(seconds?|secs?|s|minutes?|mins?|min|m|hours?|hrs?|hr|h)\b\s*(?:to\s+)?(.*)/i);
     if(remindMatch){
         const amount=Number(remindMatch[1]);
