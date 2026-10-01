@@ -968,3 +968,16 @@ function onWakeWord() {
 }
 
 setupWakeWord();
+// ===== SCREEN WAKE LOCK (voice aagakunda) =====
+let wakeLock = null;
+async function requestWakeLock(){
+  try{
+    if('wakeLock' in navigator){
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  }catch(e){}
+}
+requestWakeLock();
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') requestWakeLock();
+});
