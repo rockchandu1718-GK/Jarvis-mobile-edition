@@ -155,6 +155,19 @@ if(delCMatch){
   if(contacts[name]){delete contacts[name];localStorage.setItem('jarvis_contacts',JSON.stringify(contacts));return 'Contact removed: '+name+', Boss.';}
   return 'Contact not found: '+name+', Boss.';
 }
+ // ===== WHATSAPP MESSAGE =====
+const waMatch=t.match(/^\s*(?:please\s+)?(?:send\s+)?whatsapp\s+(?:to\s+)?([a-z]+)\s+(.+?)\s*$/i);
+if(waMatch){
+  const name=waMatch[1].toLowerCase();
+  const msg=waMatch[2].trim();
+  let contacts={};
+  try{contacts=JSON.parse(localStorage.getItem('jarvis_contacts')||'{}');}catch(e){}
+  if(!contacts[name]) return 'Contact not found: '+name+', Boss.';
+  let num=String(contacts[name]).replace(/\D/g,'');
+  if(num.length===10) num='91'+num;
+  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
+  return 'Opening WhatsApp chat with '+name+', Boss.';
+} 
   const openAppMatch = text.match(/^\s*(?:please\s+)?(?:open\s+([a-z]+)|([a-z]+)\s+open|([a-z]+))(?:\s+please)?[.!?]*\s*$/i);
   if (openAppMatch) {
     const siteName = (openAppMatch[1] || openAppMatch[2] || openAppMatch[3]).toLowerCase();
@@ -627,6 +640,7 @@ if(r.startsWith('Reminder limit')) return '24 గంటల కంటే ఎక�
   if(r.startsWith('Could not retrieve')) return 'ఈ పదానికి meaning ఇప్పుడే దొరకలేదు. కొద్దిసేపటికి మళ్లీ try చేద్దాం.';
   if(r.startsWith('Your strong password: ')) return 'ఇదిగో strong password: '+r.slice('Your strong password: '.length);
   if(r.startsWith('Secure password generation')) return 'ఈ browserలో secure password generate చేయడం అందుబాటులో లేదు.';
+  if(r.startsWith('Opening WhatsApp chat with ')&&r.endsWith(', Boss.')) return '💬 '+r.slice(27,-7)+' tho WhatsApp chat open chesa! Message ready chesa — send button noku.';
   if(r.startsWith('Opening YouTube')) return 'YouTube ఓపెన్ చేస్తున్నాను.';
   if(r.startsWith('Opening Google')) return 'Google ఓపెన్ చేస్తున్నాను.';
   if(r.startsWith('Opening ')) return r.replace(', Boss.','')+' చేస్తున్నాను.';
