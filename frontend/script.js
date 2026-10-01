@@ -207,7 +207,6 @@ if(schMatch){
   const list=todays.map((e,i)=>(i+1)+') '+e.title+' - '+e.time).join(', ');
   return 'Your schedule '+dayWord+': '+list+', Boss.';
 }
-          const openAppMatch = text.match(...)
   const openAppMatch = text.match(/^\s*(?:please\s+)?(?:open\s+([a-z]+)|([a-z]+)\s+open|([a-z]+))(?:\s+please)?[.!?]*\s*$/i);
   if (openAppMatch) {
     const siteName = (openAppMatch[1] || openAppMatch[2] || openAppMatch[3]).toLowerCase();
