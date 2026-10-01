@@ -758,7 +758,7 @@ micBtn.onclick=()=>{if(!rec){add('SYSTEM: Voice input is not supported in this b
 if(rec)rec.onend=()=>{micBtn.innerText='🎙️';};
 let voices=[]; function loadVoices(){ if(!('speechSynthesis' in window))return; try{voices=window.speechSynthesis.getVoices();}catch(e){voices=[];} }
 loadVoices(); if('speechSynthesis' in window)window.speechSynthesis.onvoiceschanged=loadVoices;
-function speak(t){ if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined')return; const u=new SpeechSynthesisUtterance(t); u.rate=0.92; u.pitch=0.7;
+function speak(t){ if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined')return; const u=new SpeechSynthesisUtterance(t); u.rate=0.92; u.pitch=0.5;
   const isTelugu=/[\u0C00-\u0C7F]/.test(t); const v=isTelugu?voices.find(v=>/^te[-_]/i.test(v.lang)):(voices.find(v=>/uk english male/i.test(v.name))||voices.find(v=>/^en[-_]GB/i.test(v.lang))||voices.find(v=>/^en[-_]/i.test(v.lang))); if(v){u.voice=v;u.lang=v.lang;}else if(isTelugu)u.lang='te-IN'; try{window.speechSynthesis.speak(u);}catch(e){console.warn('Speech output unavailable:',e);} }
 
 // ===== 7. SEND + CLEAR =====
