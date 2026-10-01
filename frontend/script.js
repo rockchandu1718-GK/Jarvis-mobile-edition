@@ -168,8 +168,6 @@ if(waMatch){
   window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
   return 'Opening WhatsApp chat with '+name+', Boss.';
 } 
-  169 return 'Opening WhatsApp chat with '+name+', Boss.';
-170 }
 // ===== SCHEDULE / PROGRAMS =====
 const addEvMatch=text.match(/^\s*(?:please\s+)?add\s+event\s+(.+?)\s+(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*$/i);
 if(addEvMatch){
@@ -207,9 +205,8 @@ if(schMatch){
   const list=todays.map((e,i)=>(i+1)+') '+e.title+' - '+e.time).join(', ');
   return 'Your schedule '+dayWord+': '+list+', Boss.';
 }
-          const openAppMatch = text.match(...)
   const openAppMatch = text.match(/^\s*(?:please\s+)?(?:open\s+([a-z]+)|([a-z]+)\s+open|([a-z]+))(?:\s+please)?[.!?]*\s*$/i);
-  if (openAppMatch) {
+  
     const siteName = (openAppMatch[1] || openAppMatch[2] || openAppMatch[3]).toLowerCase();
     if (SITES[siteName]) {
       window.open(SITES[siteName], '_blank', 'noopener,noreferrer');
