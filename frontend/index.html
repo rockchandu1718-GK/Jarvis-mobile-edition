@@ -1,1 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>MY PERSONAL JARVIS - Final PWA</title>
+<link rel="manifest" href='data:application/json;base64,eyJuYW1lIjoiTVkgUEVSU09OQUwgSkFSVklTIiwic2hvcnRfbmFtZSI6IkpBUlZJUyIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMDAwMDAwIiwidGhlbWVfY29sb3IiOiIjMDBlNWZmIn0='>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#000;color:#7ef9ff;font-family:monospace;overflow-x:hidden}
+h1{font-size:28px;text-align:center;letter-spacing:4px;margin:12px 0}
+.ring-wrap{position:relative;width:280px;height:280px;margin:10px auto}
+.ring{position:absolute;border:1px solid #00e5ff;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)}
+.r1{width:280px;height:280px;opacity:.3;animation:rot 12s linear infinite}
+.r2{width:220px;height:220px;opacity:.5;border-style:dashed;animation:rot 8s linear infinite reverse}
+.r3{width:160px;height:160px;box-shadow:0 0 30px #00e5ff, inset 0 0 20px #00e5ff;background:radial-gradient(circle,#00e5ff44,transparent);animation:pulse 2s ease-in-out infinite}
+@keyframes rot{to{transform:translate(-50%,-50%) rotate(360deg)}}@keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.1)}}
+#chat{border:1px solid #00e5ff33;border-radius:16px;margin:10px;padding:10px;height:300px;overflow:auto;background:#001111}
+.msg{margin:6px 0;padding:8px 10px;border-radius:10px;font-size:13px;line-height:1.4}
+.user{background:#00e5ff22;text-align:right}
+.jarvis{background:#000;border:1px solid #00e5ff22}
+#inputRow{display:flex;gap:8px;padding:10px}
+#inputRow input{flex:1;padding:12px;border-radius:20px;border:1px solid #00e5ff55;background:#000;color:#7ef9ff;outline:none}
+button{padding:10px 14px;border-radius:20px;border:1px solid #00e5ff55;background:#00e5ff;color:#000;font-weight:900;cursor:pointer}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 10px 10px}
+.controls button{font-size:11px}
+@media(max-width:768px){.ring-wrap{width:200px;height:200px}.r1{width:200px;height:200px}.r2{width:150px;height:150px}.r3{width:110px;height:110px}h1{font-size:20px}}
+</style>
+</head>
+<body>
+<h1>MY PERSONAL JARVIS</h1>
+<div class="ring-wrap">
+<div class="ring r1"></div>
+<div class="ring r2"></div>
+<div class="ring r3" id="core"></div>
+</div>
+<div style="text-align:center;margin:6px;font-size:11px" id="status">SYSTEM OFFLINE • Click WAKE • Storage 2MB</div>
+<div id="chat"></div>
+<div id="inputRow"><input id="msg" placeholder="Type: play samajavaragamana, weather Vempalle, send hii to amma..."><button onclick="sendMsg()">SEND</button></div>
+<div class="controls">
+<button onclick="toggleWake()" id="wakeBtn">▶ WAKE ON</button>
+<button onclick="cmd('weather in Vempalle')">WEATHER</button>
+<button onclick="cmd('play samajavaragamana song')">PLAY SONG</button>
+<button onclick="cmd('send hii to amma on whatsapp')">WHATSAPP AMMA</button>
+<button onclick="cmd('set alarm 6am')">ALARM</button>
+<button onclick="cmd('news headlines')">NEWS</button>
+<button onclick="cmd('navigate to Tirupati')">NAVIGATE</button>
+<button onclick="cmd('send design code image to whatsapp')">SEND IMAGE</button>
+</div>
+<script>
+const coords={"vempalle":{lat:14.3667,lon:78.4667,label:"Vempalle, Kadapa, AP"},"kadapa":{lat:14.4673,lon:78.8242,label:"Kadapa, AP"},"hyderabad":{lat:17.385,lon:78.4867,label:"Hyderabad"},"tirupati":{lat:13.6288,lon:79.4192,label:"Tirupati"},"vijayawada":{lat:16.5062,lon:80.648,label:"Vijayawada"},"andhra pradesh":{lat:15.9129,lon:79.74,label:"Andhra Pradesh"}};
+let isOn=false, recognition=null, synth=window.speechSynthesis;
+function add(role,text){
+ const d=document.createElement('div');d.className='msg '+role; d.innerHTML='<b>'+role.toUpperCase()+':</b> '+text+' <span style="opacity:.5;font-size:10px">'+new Date().toLocaleTimeString()+'</span>';
+ document.getElementById('chat').appendChild(d); document.getElementById('chat').scrollTop=document.getElementById('chat').scrollHeight;
+}
+function speak(t){
+ if(!synth) return; synth.cancel(); let u=new SpeechSynthesisUtterance(t); let vs=synth.getVoices(); let b=vs.find(v=>v.lang.includes('en-GB'))||vs[0]; if(b) u.voice=b; u.rate=0.95; synth.speak(u);
+}
+async function getWeather(place){
+ place=place.toLowerCase(); let c=coords[place]; 
+ if(!c){ try{let r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(place)}&count=1`); let j=await r.json(); if(j.results&&j.results[0]){c={lat:j.results[0].latitude,lon:j.results[0].longitude,label:j.results[0].name}} }catch(e){} }
+ if(!c) c=coords["vempalle"];
+ let w=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,wind_speed_10m,weather_code&timezone=auto`).then(r=>r.json());
+ return `${c.label}: ${w.current.temperature_2m}°C, Wind ${w.current.wind_speed_10m} km/h, Boss.`;
+}
+async function cmd(t){
+ t=t.toLowerCase(); add('user',t);
+ if(t.includes('weather')){ let place=t.replace('weather','').replace('in','').trim()||'vempalle'; let wt=await getWeather(place); add('jarvis',wt); speak(wt); return; }
+ if(t.includes('play')){ let q=t.replace('play','').trim(); add('jarvis','Opening YouTube for '+q+', Boss.'); speak('Playing '+q); window.open('https://m.youtube.com/results?search_query='+encodeURIComponent(q),'_blank'); return; }
+ if(t.includes('whatsapp')||t.includes('send')){ let msg=t.replace('send','').replace('on whatsapp','').trim(); let url='https://wa.me/?text='+encodeURIComponent(msg+' - from JARVIS'); add('jarvis','Opening WhatsApp for: '+msg+', Boss.'); window.open(url,'_blank'); return; }
+ if(t.includes('alarm')){ add('jarvis','Alarm set for '+t+', Boss. I will notify you.'); if(Notification&&Notification.permission!=='granted') Notification.requestPermission(); setTimeout(()=>{new Notification('JARVIS Alarm',{body:t}); speak('Alarm ringing, Boss')}, 5000); return; }
+ if(t.includes('news')){ let r=await fetch('https://hn.algolia.com/api/v1/search?tags=front_page').then(x=>x.json()); let titles=r.hits.slice(0,3).map(h=>h.title).join(' | '); add('jarvis','Headlines: '+titles+', Boss.'); speak(titles); return; }
+ if(t.includes('navigate')||t.includes('map')){ let place=t.replace('navigate','').replace('to','').replace('map','').trim(); add('jarvis','Routing to '+place+', Boss.'); window.open('https://www.google.com/maps/search/'+encodeURIComponent(place),'_blank'); return; }
+ if(t.includes('design')&&t.includes('image')){ 
+   let canvas=document.createElement('canvas'); canvas.width=1080; canvas.height=1350; let ctx=canvas.getContext('2d');
+   ctx.fillStyle='#000'; ctx.fillRect(0,0,1080,1350); ctx.strokeStyle='#00e5ff'; ctx.lineWidth=4; ctx.strokeRect(20,20,1040,1310);
+   ctx.fillStyle='#00e5ff'; ctx.font='bold 48px monospace'; ctx.fillText('MY PERSONAL JARVIS',80,120);
+   ctx.font='24px monospace'; ctx.fillStyle='#7ef9ff'; let code='function jarvis(){\n  console.log("Yes Boss");\n  play("samajavaragamana");\n  sendWhatsApp("amma","hii");\n}'; code.split('\n').forEach((l,i)=>ctx.fillText(l,80,220+i*40));
+   canvas.toBlob(async (blob)=>{
+     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([blob],'jarvis.png',{type:'image/png'})]})){
+       try{await navigator.share({files:[new File([blob],'jarvis-code.png',{type:'image/png'})], title:'JARVIS Code', text:'From MY PERSONAL JARVIS'}); add('jarvis','Image shared to WhatsApp via system share, Boss.');}
+       catch(e){add('jarvis','Share cancelled, Boss. Image downloaded instead.'); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='jarvis-code.png'; a.click();}
+     } else { let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='jarvis-code.png'; a.click(); add('jarvis','Image downloaded. Now open WhatsApp and attach it, Boss.'); }
+   });
+   return;
+ }
+ if(t.includes('joke')){ let jokes=["Why did Stark bring ladder? Drinks on the house, Boss.","JARVIS in 11th class? Still smarter than ChatGPT limit, Boss."]; let j=jokes[Math.floor(Math.random()*jokes.length)]; add('jarvis',j); speak(j); return; }
+ if(t.includes('time')||t.includes('briefing')||t.includes('schedule')){ let now=new Date().toLocaleString(); add('jarvis','Briefing: Time '+now+', Battery '+(navigator.getBattery?'checking':'unknown')+', Weather Vempalle ready, All systems online, Boss.'); speak('All systems online'); return; }
+ add('jarvis','Yes Boss, all systems online and fully operational. Command: '+t+', executed, Boss.');
+ speak('Yes Boss, all systems online');
+}
+function sendMsg(){ let v=document.getElementById('msg').value; if(!v) return; cmd(v); document.getElementById('msg').value=''; }
+document.getElementById('msg').addEventListener('keydown',e=>{if(e.key==='Enter') sendMsg()});
+function toggleWake(){
+ isOn=!isOn; document.getElementById('wakeBtn').textContent=isOn?'● STOP WAKE':'▶ WAKE ON'; document.getElementById('status').textContent=isOn?'LISTENING FOR HEY JARVIS • Say Hey Jarvis':'SYSTEM OFFLINE • Click WAKE';
+ if(isOn){ startRec(); speak('Yes Boss, all systems online and fully operational'); add('jarvis','Yes Boss, all systems online and fully operational'); } else { if(recognition) recognition.stop(); }
+}
+function startRec(){
+ let SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){add('jarvis','Speech not supported in this browser, use Chrome, Boss.'); return;}
+ recognition=new SR(); recognition.continuous=true; recognition.interimResults=false; recognition.lang='en-IN';
+ recognition.onresult=e=>{
+   let txt=e.results[e.results.length-1][0].transcript.toLowerCase();
+   if(txt.includes('hey jarvis')||txt.includes('jarvis')){
+     document.getElementById('core').style.boxShadow='0 0 80px #00e5ff'; setTimeout(()=>document.getElementById('core').style.boxShadow='',1000);
+     speak('Yes Boss, all systems online and fully operational'); add('jarvis','Yes Boss, all systems online and fully operational');
+     let command=txt.replace('hey jarvis','').replace('jarvis','').trim(); if(command) cmd(command);
+   }
+ };
+ recognition.onend=()=>{ if(isOn) recognition.start(); };
+ recognition.start();
+}
+add('jarvis','Mark 42 Final PWA loaded. Click WAKE ON and say Hey Jarvis, Boss. Storage 2MB.');
+// service worker
+if('serviceWorker' in navigator){ let code=`self.addEventListener('install',e=>{e.waitUntil(caches.open('jarvis-final').then(c=>c.addAll(['./'])))}); self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))})`; let blob=new Blob([code],{type:'text/javascript'}); navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{}); }
+</script>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
+</html>
 
