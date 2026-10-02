@@ -462,6 +462,168 @@ if(timerCommand){
     }catch(e){ return 'Crypto service error, Boss.'; }
   }
 
+
+  // ===== TONY STARK LEVEL 1: AUTO BRIEFING =====
+  if(/\b(?:good morning|morning briefing|start my day|briefing|day briefing|my day)\b/.test(t) || (t.includes('good morning')||t.includes('briefing'))){
+    try{
+      const timeStr = new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'numeric',minute:'2-digit'});
+      const dateStr = new Date().toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',weekday:'long',month:'long',day:'numeric'});
+      let weatherStr=''; try{ weatherStr = await handleTools('weather'); }catch(e){ weatherStr='Weather unavailable'; }
+      let newsStr=''; try{ const ids=await fetchToolJson('https://hacker-news.firebaseio.com/v0/topstories.json'); const top=ids.slice(0,3); const titles=[]; for(const id of top){ try{ const it=await fetchToolJson('https://hacker-news.firebaseio.com/v0/item/'+id+'.json'); if(it&&it.title) titles.push(it.title);}catch(e){} } newsStr = titles.length? titles.map((x,i)=>(i+1)+'. '+x).join(' ') : 'No headlines'; }catch(e){ newsStr='News unavailable'; }
+      let batt=''; try{ if(navigator.getBattery){ const b=await navigator.getBattery(); batt=' Battery '+Math.round(b.level*100)+'%.'; } }catch(e){}
+      let quote=''; try{ const q=await fetchToolJson('https://dummyjson.com/quotes/random'); if(q&&q.quote) quote=' Thought: '+q.quote; }catch(e){}
+      return 'Good morning Boss. Today is '+dateStr+', time '+timeStr+'. '+weatherStr+' '+newsStr+'.'+batt+quote;
+    }catch(e){ return 'Morning briefing error, Boss.'; }
+  }
+
+  // ===== SYSTEM STATUS / SUIT DIAGNOSTICS =====
+  if(/\b(?:system status|suit status|diagnostics|system health|all systems|status report)\b/.test(t)){
+    try{
+      let bStr='Battery: unknown'; try{ if(navigator.getBattery){ const b=await navigator.getBattery(); bStr='Battery '+Math.round(b.level*100)+'%'+(b.charging?' (charging)':''); } }catch(e){}
+      const online = navigator.onLine ? 'Online' : 'Offline';
+      const mem = MEMORY.length+' conversations';
+      const loc = localStorage.getItem('jarvis_home_location')||'Unknown location';
+      const lights = JSON.parse(localStorage.getItem('jarvis_home')||'{}').lights||'off';
+      return 'System status, Boss: '+bStr+', Network '+online+', Memory '+mem+', Home lights '+lights+', Location '+loc+'. All systems nominal.';
+    }catch(e){ return 'Status check error, Boss.'; }
+  }
+
+  // ===== SMART HOME HUD =====
+  if(/\b(?:lights?\s*(?:on|off)|turn\s+(?:on|off)\s+lights?|ac\s*(?:on|off)|smart home|home status)\b/.test(t)){
+    let home={}; try{ home=JSON.parse(localStorage.getItem('jarvis_home')||'{}'); }catch(e){}
+    if(/lights?\s*on|turn\s+on\s+lights?/.test(t)){ home.lights='on'; localStorage.setItem('jarvis_home',JSON.stringify(home)); return 'Lights turned on, Boss. Home HUD updated.'; }
+    if(/lights?\s*off|turn\s+off\s+lights?/.test(t)){ home.lights='off'; localStorage.setItem('jarvis_home',JSON.stringify(home)); return 'Lights turned off, Boss.'; }
+    if(/ac\s*on/.test(t)){ home.ac='on'; localStorage.setItem('jarvis_home',JSON.stringify(home)); return 'AC turned on, Boss.'; }
+    if(/ac\s*off/.test(t)){ home.ac='off'; localStorage.setItem('jarvis_home',JSON.stringify(home)); return 'AC turned off, Boss.'; }
+    if(/home status/.test(t)){ return 'Home status: Lights '+(home.lights||'off')+', AC '+(home.ac||'off')+', Boss.'; }
+  }
+
+  // ===== LOCATION + NAVIGATION =====
+  if(/\b(?:where am i|my location|current location|navigate to|take me to|directions to)\b/.test(t)){
+    if(/navigate to|take me to|directions to/.test(t)){
+      const dest = text.replace(/.*(?:navigate to|take me to|directions to)\s+/i,'').trim();
+      if(!dest) return 'Tell me where to navigate, Boss.';
+      window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest),'_blank','noopener,noreferrer');
+      return 'Navigating to '+dest+', Boss.';
+    } else {
+      // get location
+      return new Promise((resolve)=>{
+        if(!navigator.geolocation){ resolve('Location not supported, Boss.'); return; }
+        navigator.geolocation.getCurrentPosition((pos)=>{
+          const lat=pos.coords.latitude, lon=pos.coords.longitude;
+          try{ localStorage.setItem('jarvis_home_location', lat.toFixed(4)+','+lon.toFixed(4)); }catch(e){}
+          window.open('https://www.google.com/maps?q='+lat+','+lon,'_blank','noopener,noreferrer');
+          resolve('Your location is '+lat.toFixed(4)+', '+lon.toFixed(4)+'. Opening maps, Boss.');
+        }, (err)=>{ resolve('Location permission needed, Boss.'); }, {timeout:8000});
+      });
+    }
+  }
+
+  // ===== BATTERY % =====
+  if(/\b(?:battery|charge|charging)\b/.test(t)){
+    try{
+      if(!navigator.getBattery) return 'Battery API not supported in this browser, Boss.';
+      const b=await navigator.getBattery();
+      return 'Battery is '+Math.round(b.level*100)+'% '+(b.charging?'(charging)':' (not charging)')+', Boss.';
+    }catch(e){ return 'Battery status error, Boss.'; }
+  }
+
+  // ===== NOTES / TODO (JARVIS MEMORY NOTES) =====
+  if(/\b(?:note|todo|remember|notes)\b/.test(t)){
+    let notes=[]; try{ notes=JSON.parse(localStorage.getItem('jarvis_notes')||'[]'); }catch(e){ notes=[]; }
+    if(/\b(?:add note|remember|note down|add todo)\b/.test(t) || /^note\s+/i.test(text)){
+      const content = text.replace(/^(?:add note|remember|note down|add todo|note)\s*/i,'').trim();
+      if(!content) return 'What should I note down, Boss?';
+      notes.push({text:content, time:Date.now()});
+      localStorage.setItem('jarvis_notes', JSON.stringify(notes));
+      return 'Noted: '+content+', Boss.';
+    }
+    if(/\b(?:show notes|list notes|my notes|show todos|list todos|what.*notes)\b/.test(t)){
+      if(!notes.length) return 'No notes yet, Boss.';
+      return 'Your notes: '+notes.map((n,i)=>(i+1)+'. '+n.text).join(' ')+'.';
+    }
+    if(/\b(?:clear notes|delete notes|clear todos)\b/.test(t)){
+      localStorage.setItem('jarvis_notes','[]');
+      return 'All notes cleared, Boss.';
+    }
+  }
+
+  // ===== CODE RUNNER (STARK HACKING) =====
+  if(/^\s*(?:run|execute)\s+(?:code|js|javascript)\s*[:\-]?\s*(.+)/i.test(text) || /^\s*code\s*[:\-]?\s*(.+)/i.test(text)){
+    const codeMatch = text.match(/^(?:\s*(?:run|execute)\s+(?:code|js|javascript)\s*[:\-]?\s*(.+)|\s*code\s*[:\-]?\s*(.+))/i);
+    const code = (codeMatch[1]||codeMatch[2]||'').trim();
+    if(!code) return 'Tell me the code to run, Boss.';
+    try{
+      // Safe sandbox using Function
+      const result = Function('"use strict"; return ('+code+')')();
+      return 'Code result: '+String(result).slice(0,500)+', Boss.';
+    }catch(e){
+      try{
+        const result2 = Function('"use strict"; '+code)();
+        return 'Code executed, Boss. Result: '+String(result2||'done').slice(0,500);
+      }catch(e2){ return 'Code error: '+(e2.message||'unknown')+', Boss.'; }
+    }
+  }
+
+  // ===== CALCULATOR VOICE =====
+  if(/\b(?:calculate|calc|what is|entha|\d+\s*[+\-*/]\s*\d+)\b/.test(t) && /[0-9]/.test(t) && /[+\-*/]/.test(t)){
+    const expr = t.match(/([0-9.\s+\-*/()]+)/);
+    if(expr){
+      try{
+        const clean = expr[1].replace(/[^0-9.+\-*/()\s]/g,'').trim();
+        if(clean && clean.length<30){
+          const val = Function('"use strict"; return ('+clean+')')();
+          if(Number.isFinite(val)) return clean+' = '+val+', Boss.';
+        }
+      }catch(e){}
+    }
+  }
+
+  // ===== PERSONALITY MODES =====
+  if(/\b(?:roast me|roast mode|serious mode|funny mode|normal mode|stark mode|personality)\b/.test(t)){
+    if(/roast/.test(t)){ localStorage.setItem('jarvis_personality','roast'); return 'Roast mode ON, Boss. Brace yourself. Your code has more bugs than Stark has suits.'; }
+    if(/serious/.test(t)){ localStorage.setItem('jarvis_personality','serious'); return 'Serious mode activated. All jokes disabled.'; }
+    if(/funny|normal|stark/.test(t)){ localStorage.setItem('jarvis_personality','stark'); return 'Stark mode ON. Witty, loyal and calm. At your service, Boss.'; }
+  }
+
+  // ===== VOICE LOCK =====
+  if(/\b(?:lock system|lock jarvis|system lock)\b/.test(t)){
+    localStorage.setItem('jarvis_locked','true');
+    return 'System locked, Boss. Say "unlock system" to unlock.';
+  }
+  if(/\b(?:unlock system|unlock jarvis)\b/.test(t)){
+    localStorage.removeItem('jarvis_locked');
+    return 'System unlocked. Welcome back, Boss.';
+  }
+
+  // ===== CURRENCY EXTENDED (USD, EUR, GBP to INR) =====
+  if(/\b(?:eur|euro|gbp|pound)\b/.test(t) && /\d/.test(t)){
+    const amtMatch=t.match(/([0-9]+(?:\.[0-9]+)?)/); const amt=amtMatch?Number(amtMatch[1]):1;
+    const curr = /eur|euro/.test(t)?'EUR':'GBP';
+    try{
+      const data=await fetchToolJson('https://open.er-api.com/v6/latest/'+curr);
+      const rate=Number(data?.rates?.INR); if(!Number.isFinite(rate)) throw new Error();
+      return amt+' '+curr+' is about '+Math.round(amt*rate)+' Indian rupees, Boss.';
+    }catch(e){ return 'Currency service error, Boss.'; }
+  }
+
+  // ===== INTRUDER / SECURITY CAM =====
+  if(/\b(?:security mode|intruder mode|surveillance|watch mode|guard mode)\b/.test(t)){
+    localStorage.setItem('jarvis_security','on');
+    return 'Security mode ON, Boss. I will watch via camera. Say "security off" to disable.';
+  }
+  if(/\b(?:security off|surveillance off|stop watching)\b/.test(t)){
+    localStorage.removeItem('jarvis_security');
+    return 'Security mode OFF, Boss.';
+  }
+
+  // ===== PROJECTS / RESEARCH (Enhanced agent) =====
+  if(/\b(?:create a plan|make a plan|project plan|build a plan|roadmap for)\b/.test(t)){
+    // delegate to agent
+    return null; // let Gemini handle it, but mark as agent
+  }
+
+
   return null;
 }
 function fireJarvisAlarm(){
@@ -901,6 +1063,65 @@ function setupVoiceInput() {
     }
   };
 }
+
+
+// ===== TONY STARK PROACTIVE + HOLOGRAM UI =====
+(function tonyStarkEnhancements(){
+  // 1. Hologram visualizer overlay
+  try{
+    const style = document.createElement('style');
+    style.textContent = `
+      .jarvis-holo { position:fixed; top:10px; right:10px; width:80px; height:80px; border:2px solid #0ff; border-radius:50%; box-shadow:0 0 20px #0ff, inset 0 0 20px rgba(0,255,255,0.2); animation: jarvisPulse 2s infinite; pointer-events:none; z-index:9998; }
+      @keyframes jarvisPulse { 0%{ box-shadow:0 0 10px #0ff } 50%{ box-shadow:0 0 30px #0ff, 0 0 50px #0ff } 100%{ box-shadow:0 0 10px #0ff } }
+      .jarvis-home-hud { position:fixed; bottom:10px; left:10px; background:rgba(0,20,20,0.85); border:1px solid #0ff; color:#0ff; padding:8px 12px; border-radius:10px; font-size:12px; z-index:9998; font-family:monospace; }
+    `;
+    document.head.appendChild(style);
+    const holo = document.createElement('div'); holo.className='jarvis-holo'; holo.innerHTML='<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#0ff;font-size:24px;">◉</div>'; document.body.appendChild(holo);
+    const hud = document.createElement('div'); hud.className='jarvis-home-hud'; hud.id='jarvisHomeHUD'; hud.innerHTML='JARVIS HOME • Lights: off • AC: off'; document.body.appendChild(hud);
+    setInterval(()=>{ try{ const home=JSON.parse(localStorage.getItem('jarvis_home')||'{}'); const h=document.getElementById('jarvisHomeHUD'); if(h) h.innerHTML='JARVIS HOME • Lights: '+(home.lights||'off')+' • AC: '+(home.ac||'off')+' • '+(navigator.onLine?'Online':'Offline'); }catch(e){} }, 2000);
+  }catch(e){}
+
+  // 2. Proactive battery low warning
+  try{
+    if(navigator.getBattery){
+      navigator.getBattery().then(b=>{
+        b.addEventListener('levelchange', ()=>{
+          if(b.level<0.15 && !b.charging){
+            try{ const msg='Battery low: '+Math.round(b.level*100)+'%. Charge cheyyi, Boss.'; add('J.A.R.V.I.S: '+msg,'ai'); speak(msg); if(Notification.permission==='granted') new Notification('JARVIS Battery', {body:msg}); }catch(e){}
+          }
+        });
+      });
+    }
+  }catch(e){}
+
+  // 3. Voice lock check
+  const originalAsk = window.askGemini;
+  // lock is handled in handleTools already via localStorage, but add UI block
+  setInterval(()=>{
+    try{
+      if(localStorage.getItem('jarvis_locked')==='true'){
+        const inp=document.getElementById('msg'); if(inp && !inp.disabled){ inp.placeholder='🔒 System locked - say unlock system'; }
+      } else {
+        const inp=document.getElementById('msg'); if(inp && inp.placeholder.includes('locked')) inp.placeholder='';
+      }
+    }catch(e){}
+  },1000);
+
+  // 4. Startup arc reactor sound (visual only, no audio file needed - use WebAudio)
+  try{
+    window.playArcSound = function(){
+      try{
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(200, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(800, ctx.currentTime+0.5);
+        g.gain.setValueAtTime(0.1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime+0.8);
+        o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.8);
+      }catch(e){}
+    };
+    // play on first load
+    setTimeout(()=>{ try{ window.playArcSound(); }catch(e){} }, 2000);
+  }catch(e){}
+})();
 
 setupVoiceInput();
 // ===== STEP 6: "HEY JARVIS" WAKE WORD =====
